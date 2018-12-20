@@ -84,10 +84,10 @@ class FloatFiled(Filed):
     def __init__(self, name = None, primary_key = False, default = 0):
         super().__init__(name, 'bigint', primary_key, default)
 
-class FloatFiled(Filed):
+class TextFiled(Filed):
     """docstring for StringFiled"""
-    def __init__(self, name = None, primary_key = False, default = 0.0):
-        super().__init__(name, 'real', primary_key, default)
+    def __init__(self, name = None, primary_key = False, default = None:
+        super().__init__(name, 'text', primary_key, default)
 
 
 class ModelMetaclass(type):
