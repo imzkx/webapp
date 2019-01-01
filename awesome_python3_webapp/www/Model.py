@@ -17,7 +17,7 @@ class User(Model):
     image = StringFiled(ddl='varchar(500)')
     created_at = FloatFiled(default=time.time)
 
-class  Blog(Model):
+class Blog(Model):
     """docstring for  Blog"""
     __table__ = 'blogs'
 
@@ -31,7 +31,7 @@ class  Blog(Model):
     created_at = FloatFiled(default=time.time)
 
 
- class  Comment(Model):
+class Comment(Model):
     """docstring for  Blog"""
     __table__ = 'comments'
 
