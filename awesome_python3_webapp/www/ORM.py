@@ -86,7 +86,7 @@ class FloatFiled(Filed):
 
 class TextFiled(Filed):
     """docstring for StringFiled"""
-    def __init__(self, name = None, primary_key = False, default = None:
+    def __init__(self, name = None, primary_key = False, default = None):
         super().__init__(name, 'text', primary_key, default)
 
 
