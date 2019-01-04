@@ -11,6 +11,9 @@ def index(request):
         '__template__': 'test.html',
         'users': users
     }
+    '''
+    return web.Response(body="hello")
+    '''
 @asyncio.coroutine
 def init(loop):
     app = web.Application(loop=loop)
