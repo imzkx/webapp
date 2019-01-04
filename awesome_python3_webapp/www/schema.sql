@@ -1,13 +1,14 @@
 -- schema.sql
+
 drop database if exists awesome;
 
 create database awesome;
 
 use awesome;
 
--- grant select, insert, update, delete on awesome.* to 'root'@'localhost' identified by '123';with grant option
+-- grant select, insert, update, delete on awesome.* to 'root'@'localhost' identified by 'root';
 -- create user 'root'@'localhost' identified by '123';
-grant select, insert, update, delete on awesome.* to 'root'@'localhost' ;
+grant select, insert, update, delete on awesome.* to 'root'@'localhost';
 
 create table users (
     `id` varchar(50) not null,
