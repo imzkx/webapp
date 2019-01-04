@@ -1,10 +1,13 @@
 import logging; logging.basicConfig(level=logging.INFO)
 
 import asyncio, os, json, time
+
 from datetime import datetime
 from Model import User
 from aiohttp import web
+from coreweb import get
 
+@get('/')
 def index(request):
     users = yield from User.findAll()
     return {
@@ -14,6 +17,22 @@ def index(request):
     '''
     return web.Response(body="hello")
     '''
+@asyncio.coroutine
+def response_factory(app, handler):
+    @asyncio.coroutine
+    def response(request):
+        r= yield from handler(request)
+        if isinstance(r, web.StreamResponse):
+            return r
+        if isinstance(r, bytes):
+            resp = web.Response(body=r)
+            resp.content_type = 'application/octet-stream'
+            return resp
+        if isinstance(r, bytes):
+            resp = web.Response(body=r)
+            resp.content_type = 'text/html;charset=utf-8'
+            return resp
+
 @asyncio.coroutine
 def init(loop):
     app = web.Application(loop=loop)

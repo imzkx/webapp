@@ -1,7 +1,7 @@
 #cofig_overwrite.py
 
 configs = {
-    'de': {
-        'host' '192.168.0.100'
+    'db': {
+        'host' '127.0.0.1'
     }
 }
