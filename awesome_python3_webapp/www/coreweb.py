@@ -93,7 +93,7 @@ class RequestHandler(object):
         self._get_required_kw_args = get_required_kw_args(fn)
 
     async def __call__(self, requset):
-        kw= None
+        kw = None
         if self._has_var_kw_args or self._has_named_kw_args or self._get_required_kw_args:
             if requset.method == 'POST':
                 if not requset.content_type:
@@ -113,7 +113,7 @@ class RequestHandler(object):
                 qs = requset.query_string
                 if qs:
                     kw = dict()
-                    for k, v in parse.parse_qs(qs, True),items():
+                    for k, v in parse.parse_qs(qs, True).items():
                         kw[k] = v[0]
             if kw is None:
                 kw = dict(**requset.match_info)
@@ -124,7 +124,7 @@ class RequestHandler(object):
                         if name in kw:
                             copy[name] = kw[name]
                         kw = copy
-                    for k,v in requset.match_info.items():
+                    for k, v in requset.match_info.items():
                         if k in kw:
                             logging.warning('Duplicate arg name in named arg and kw args: %s' % k)
                         kw[k] = v
@@ -143,8 +143,8 @@ class RequestHandler(object):
 
 
 def add_static(app):
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__), 'static'))
-    app.rounter.add_static('/static/',path)
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    app.router.add_static('/static/', path)
     logging.info('add static %s => %s' % ('/static/', path))
 
 def add_rounte(app, fn):
@@ -155,12 +155,12 @@ def add_rounte(app, fn):
     if not asyncio.iscoroutinefunction(fn) and not inspect.isgeneratorfunction(fn):
         fn = asyncio.coroutine(fn)
     logging.info('add route %s %s => %s(%s)' % (method, path, fn.__name__, ','.join(inspect.signature(fn).parameters.keys())))
-    app.rounter.add_rounte(method, path, RequestHandler(app, fn))
+    app.router.add_route(method, path, RequestHandler(app, fn))
 
 def add_rountes(app, module_name):
     n = module_name.rfind('.')
     if n == (-1):
-        mod = __import__(module_name[:n], globals(), locals(), [name])
+        mod = __import__(module_name, globals(), locals())
     else:
         name = module_name[n+1:]
         mod = getattr(__import__(module_name[:n], globals(), locals(), [name]), name)
