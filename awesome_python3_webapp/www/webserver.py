@@ -34,8 +34,8 @@ def  init_jinja2(app, **kw):
     return web.Response(body="hello")
     '''
 
-
-async def logger_factory(app, handler):
+@asyncio.coroutine
+def logger_factory(app, handler):
     @asyncio.coroutine
     def logger(request):
         logging.info('Request: %s %s' % (request.method, request.path))
@@ -43,21 +43,22 @@ async def logger_factory(app, handler):
     return logger
 
 
-async def response_factory(app, handler):
-    async def response(request):
+@asyncio.coroutine
+def response_factory(app, handler):
+    @asyncio.coroutine    
+    def response(request):
         logging.info('Response handler')
-        r = await handler(request)
+        r = yield from handler(request)
         if isinstance(r, web.StreamResponse):
+            logging.info('isinstance: web.StreamResponse')
             return r
         if isinstance(r, bytes):
+            logging.info('isinstance: bytes')
             resp = web.Response(body=r)
             resp.content_type = 'application/octet-stream'
             return resp
-        if isinstance(r, bytes):
-            resp = web.Response(body=r)
-            resp.content_type = 'text/html;charset=utf-8'
-            return resp
         if isinstance(r, str):
+            logging.info('isinstance: str')
             if r.startswith('redirect:'):
                 return web.HTTPFound(r[9:])
             resp = web.Response(body=r.encode('utf-8'))
@@ -68,24 +69,31 @@ async def response_factory(app, handler):
             if template is None:
                 resp = web.Response(body=json.dumps(r, ensure_ascii=False, default=lambda o:o.__dict__).encode('utf-8'))
                 resp.content_type = 'application/json;charset=utf-8'
+                logging.info('isinstance:  dict,template is None')
                 return resp
             else:
                 resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
+                logging.info('isinstance:  dict,template is not None' )
                 return resp
         if isinstance(r, int) and r >=100 and r < 600:
+            logging.info('isinstance: int')
             return web.Response(r)
         if isinstance(r, tuple) and len(r) ==2:
-            t, m= r
+            logging.info('isinstance: tuple')
+            t, m = r
             if isinstance(t, int) and t >= 100 and t < 600:
                 return web.Response(t, str(m))
         #default:
+        logging.info('isinstance: default')
         resp = web.Response(body=str(r).encode('utf-8'))
         resp.content_type = 'text/plain;charset=utf-8'
         return resp
     return response
+
+
 def datetime_filter(t):
-    delta =int(time.time() - t)
+    delta = int(time.time() - t)
     if delta < 60:
         return u'1分钟前'
     if delta < 3600:
@@ -98,15 +106,16 @@ def datetime_filter(t):
     return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
 
-async def init(loop):
-    await ORM.create_pool(loop= loop, host='127.0.0.1', port=3306, user='root', password='123', db='awesome')
+@asyncio.coroutine
+def init(loop):
+    yield from ORM.create_pool(loop= loop, host='127.0.0.1', port=3306, user='root', password='123', db='awesome')
     app = web.Application(loop= loop, middlewares=[
         logger_factory, response_factory
     ])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_rountes(app, 'handlers')
     add_static(app)
-    srv = await loop.create_server(app.make_handler(), '127.0.0.1', 9000)
+    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 9000)
     logging.info('server started at http://127.0.0.1:9000...')
     return srv
 

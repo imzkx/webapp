@@ -92,60 +92,65 @@ class RequestHandler(object):
         self._get_named_kw_args = get_named_kw_args(fn)
         self._get_required_kw_args = get_required_kw_args(fn)
 
-    async def __call__(self, requset):
+    @asyncio.coroutine
+    def __call__(self, requset):
         kw = None
         if self._has_var_kw_args or self._has_named_kw_args or self._get_required_kw_args:
+            logging.info('%s' % requset.method)
             if requset.method == 'POST':
                 if not requset.content_type:
                     return web.HTTPBadRequest('Missing content_type')
-                ct= requset.content_type.lower()
+                ct = requset.content_type.lower()
                 if ct.startswith('application/json'):
-                    params = await requset.json()
+                    params = yield from requset.json()
                     if not isinstance(params, dict):
                         return web.HTTPBadRequest('JSON body must be objecto')
-                    kw =params
+                    kw = params
                 elif ct.startswith('application/x-www-form-urlencoded') or ct.startswith('multipart/form-data'):
-                    params = await requset.post()
+                    params = yield from requset.post()
                     kw = dict(**params)
                 else:
                     return web.HTTPBadRequest('Unsupported Content-type: %s' % requset.content_type)
             if requset.method == 'GET':
+                logging.info('requset.method == GET')
                 qs = requset.query_string
                 if qs:
+                    logging.info('qs is not none')
                     kw = dict()
                     for k, v in parse.parse_qs(qs, True).items():
                         kw[k] = v[0]
-            if kw is None:
-                kw = dict(**requset.match_info)
-            else:
-                if not self._has_var_kw_args and self._get_named_kw_args:
-                    copy = dict()
-                    for name in self._get_named_kw_args:
-                        if name in kw:
-                            copy[name] = kw[name]
-                        kw = copy
-                    for k, v in requset.match_info.items():
-                        if k in kw:
-                            logging.warning('Duplicate arg name in named arg and kw args: %s' % k)
-                        kw[k] = v
-            if self._has_request_arg:
-                kw['requset'] = requset
-            if self._get_required_kw_args:
-                for name in self._get_required_kw_args:
-                    if not name in kw:
-                        return web.HTTPBadRequest('Missing argument: %s' % naem)
-            logging.info('call with args: %s' % str(kw))
-            try:
-                r = await self._func(**kw)
-                return r
-            except APIError as e:
-                return dict(error = e.error, date = e.date, message = e.message)
+        if kw is None:
+            kw = dict(**requset.match_info)
+        else:
+            if not self._has_var_kw_args and self._get_named_kw_args:
+                copy = dict()
+                for name in self._get_named_kw_args:
+                    if name in kw:
+                        copy[name] = kw[name]
+                    kw = copy
+                for k, v in requset.match_info.items():
+                    if k in kw:
+                        logging.warning('Duplicate arg name in named arg and kw args: %s' % k)
+                    kw[k] = v
+        if self._has_request_arg:
+            kw['requset'] = requset
+        if self._get_required_kw_args:
+            for name in self._get_required_kw_args:
+                if not name in kw:
+                    return web.HTTPBadRequest('Missing argument: %s' % name)
+        logging.info('call with args: %s' % str(kw))
+        try:
+            r = yield from self._func(requset)
+            return r
+        except APIError as e:
+            return dict(error=e.error, date=e.date, message=e.message)
 
 
 def add_static(app):
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     app.router.add_static('/static/', path)
     logging.info('add static %s => %s' % ('/static/', path))
+
 
 def add_rounte(app, fn):
     method = getattr(fn, '__method__', None)
@@ -157,17 +162,18 @@ def add_rounte(app, fn):
     logging.info('add route %s %s => %s(%s)' % (method, path, fn.__name__, ','.join(inspect.signature(fn).parameters.keys())))
     app.router.add_route(method, path, RequestHandler(app, fn))
 
+
 def add_rountes(app, module_name):
     n = module_name.rfind('.')
     if n == (-1):
         mod = __import__(module_name, globals(), locals())
     else:
-        name = module_name[n+1:]
+        name = module_name[n + 1:]
         mod = getattr(__import__(module_name[:n], globals(), locals(), [name]), name)
     for attr in dir(mod):
         if attr.startswith('_'):
             continue
-        fn =getattr(mod, attr)
+        fn = getattr(mod, attr)
         if callable(fn):
             method = getattr(fn, '__method__', None)
             path = getattr(fn, '__route__', None)
