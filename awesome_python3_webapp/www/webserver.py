@@ -15,7 +15,7 @@ def  init_jinja2(app, **kw):
         block_start_string = kw.get('block_start_string', '{%'),
         block_end_string = kw.get('block_end_string', '%}'),
         variable_start_string  = kw.get('variable_start_string', '{{'),
-        variable_end_string  = kw.get('variable_end_string', '{{'),
+        variable_end_string  = kw.get('variable_end_string', '}}'),
         auto_reload =  kw.get('auto_reload', True),
         )
     path = kw.get('path', None)
@@ -65,7 +65,7 @@ def response_factory(app, handler):
             resp.content_type = 'text/html;chaset=utf-8'
             return resp
         if isinstance(r, dict):
-            template = r.get(__template__)
+            template = r.get('__template__')
             if template is None:
                 resp = web.Response(body=json.dumps(r, ensure_ascii=False, default=lambda o:o.__dict__).encode('utf-8'))
                 resp.content_type = 'application/json;charset=utf-8'
